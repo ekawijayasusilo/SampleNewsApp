@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">SampleNewsApp</string>
+    <string name="title_list_category">List Category</string>
+    <string name="title_search_source">Search Source</string>
+    <string name="title_search_article">Search Article</string>
+    <string name="title_article_detail">Article Detail WebView</string>
+    <string name="search_hint_source">Search for Source…</string>
+    <string name="search_hint_article">Search for Article…</string>
+    <string name="load_next_page">Loading…</string>
+</resources>
