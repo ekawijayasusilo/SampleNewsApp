@@ -1,8 +1,8 @@
 package com.example.samplenewsapp.domain.article.repository
 
 import com.example.samplenewsapp.domain.article.model.Article
-import io.reactivex.Single
+import com.example.samplenewsapp.utils.Result
 
 interface ArticlesRepository {
-    fun getArticles(searchTerm: String, sourceId: String, page: Int): Single<List<Article>>
+    suspend fun getArticles(searchTerm: String, sourceId: String, page: Int): Result<List<Article>>
 }

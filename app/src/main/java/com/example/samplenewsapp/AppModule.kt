@@ -16,8 +16,7 @@ import com.example.samplenewsapp.domain.source.interactor.SourcesUseCase
 import com.example.samplenewsapp.domain.source.repository.SourcesRepository
 import com.example.samplenewsapp.presentation.article.presenters.ArticleDetailWebViewContract
 import com.example.samplenewsapp.presentation.article.presenters.ArticleDetailWebViewPresenter
-import com.example.samplenewsapp.presentation.article.presenters.SearchArticleContract
-import com.example.samplenewsapp.presentation.article.presenters.SearchArticlePresenter
+import com.example.samplenewsapp.presentation.article.presenters.SearchArticleViewModel
 import com.example.samplenewsapp.presentation.category.presenters.ListCategoryContract
 import com.example.samplenewsapp.presentation.category.presenters.ListCategoryPresenter
 import com.example.samplenewsapp.presentation.source.presenters.SearchSourceContract
@@ -27,7 +26,9 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidContext
-import org.koin.dsl.module.module
+import org.koin.android.viewmodel.dsl.viewModel
+import org.koin.core.qualifier.named
+import org.koin.dsl.module
 import retrofit2.CallAdapter
 import retrofit2.Converter
 import retrofit2.Retrofit
@@ -38,12 +39,12 @@ const val LOGGING_INTERCEPTOR = "LoggingInterceptor"
 const val AUTH_INTERCEPTOR = "AuthInterceptor"
 
 val appModule = module {
-    single<Interceptor>(LOGGING_INTERCEPTOR) {
+    single<Interceptor>(named(LOGGING_INTERCEPTOR)) {
         HttpLoggingInterceptor()
             .setLevel(HttpLoggingInterceptor.Level.BASIC)
     }
 
-    single<Interceptor>(AUTH_INTERCEPTOR) {
+    single<Interceptor>(named(AUTH_INTERCEPTOR)) {
         AuthInterceptor()
     }
 
@@ -57,8 +58,8 @@ val appModule = module {
 
     single<OkHttpClient> {
         OkHttpClient.Builder()
-            .addInterceptor(get(LOGGING_INTERCEPTOR))
-            .addInterceptor(get(AUTH_INTERCEPTOR))
+            .addInterceptor(get(named(LOGGING_INTERCEPTOR)))
+            .addInterceptor(get(named(AUTH_INTERCEPTOR)))
             .build()
     }
 
@@ -132,9 +133,7 @@ val appModule = module {
         ArticlesUseCase(get())
     }
 
-    factory<SearchArticleContract.Presenter> { (view: SearchArticleContract.View) ->
-        SearchArticlePresenter(view, get())
-    }
+    viewModel { SearchArticleViewModel(get()) }
 
     // Article Detail
     factory<ArticleDetailWebViewContract.Presenter> { (view: ArticleDetailWebViewContract.View) ->

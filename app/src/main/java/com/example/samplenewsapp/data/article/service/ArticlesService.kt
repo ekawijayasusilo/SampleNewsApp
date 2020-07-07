@@ -1,10 +1,10 @@
 package com.example.samplenewsapp.data.article.service
 
 import com.example.samplenewsapp.data.article.model.ArticlesErrorResponse
-import com.example.samplenewsapp.data.article.model.ArticlesResponse
+import com.example.samplenewsapp.domain.article.model.Article
 import com.example.samplenewsapp.utils.NotContinuableException
+import com.example.samplenewsapp.utils.Result
 import com.google.gson.Gson
-import io.reactivex.Single
 import retrofit2.Retrofit
 
 class ArticlesService(retrofit: Retrofit, private val gson: Gson) {
@@ -14,17 +14,17 @@ class ArticlesService(retrofit: Retrofit, private val gson: Gson) {
         const val ERROR_CODE_NOT_CONTINUABLE = "maximumResultsReached"
     }
 
-    fun getArticles(
+    suspend fun getArticles(
         searchTerm: String,
         sourceId: String,
         page: Int = 1
-    ): Single<ArticlesResponse> {
-        return api.getArticles(searchTerm, sourceId, page).map { response ->
+    ): Result<List<Article>> {
+        return api.getArticles(searchTerm, sourceId, page).let { response ->
             if (response.isSuccessful) {
                 if (response.body()?.totalResults != 0) {
-                    response.body()
+                    Result.Success(response.body()!!.toArticles())
                 } else {
-                    throw NotContinuableException("No more article found")
+                    Result.Error(NotContinuableException("No more article found"))
                 }
             } else {
                 val error = gson.fromJson(
@@ -32,11 +32,13 @@ class ArticlesService(retrofit: Retrofit, private val gson: Gson) {
                     ArticlesErrorResponse::class.java
                 )
 
-                throw if (error.code == ERROR_CODE_NOT_CONTINUABLE) {
+                val exception = if (error.code == ERROR_CODE_NOT_CONTINUABLE) {
                     NotContinuableException(error.message)
                 } else {
                     Exception(error.message)
                 }
+
+                Result.Error(exception)
             }
         }
     }

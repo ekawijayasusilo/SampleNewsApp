@@ -1,20 +1,27 @@
 package com.example.samplenewsapp.presentation.article.presenters
 
-import android.content.Intent
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import com.example.samplenewsapp.domain.article.interactor.ArticlesUseCase
 import com.example.samplenewsapp.domain.article.model.Article
 import com.example.samplenewsapp.presentation.article.models.ArticlePageModel
+import com.example.samplenewsapp.presentation.article.models.ArticlePageState
 import com.example.samplenewsapp.utils.NotContinuableException
+import com.example.samplenewsapp.utils.PageState
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import java.util.concurrent.TimeUnit
 
-class SearchArticlePresenter(
-    private var view: SearchArticleContract.View?,
+class SearchArticleViewModel(
     private val articlesUseCase: ArticlesUseCase
-) : SearchArticleContract.Presenter {
+) : ViewModel() {
+
+    private val _liveData = MutableLiveData<PageState<ArticlePageState>>()
+    val liveData: LiveData<PageState<ArticlePageState>>
+        get() = _liveData
 
     private var sourceId = ""
     private var searchTerm = ""
@@ -27,13 +34,14 @@ class SearchArticlePresenter(
 
     private val autoSearch = PublishSubject.create<String>()
     private var disposable: Disposable? = null
+
     private val onLoadSearch: (String) -> Unit = { searchTerm ->
         this.searchTerm = ""
         this.tempSearchTerm = searchTerm
         this.nextPage = 1
         this.isNextPageAvailable = true
 
-        view?.onLoadingSearchResult()
+        _liveData.value = PageState.Loading
         loadSearchArticle(searchTerm)
     }
 
@@ -42,7 +50,14 @@ class SearchArticlePresenter(
         this.nextPage++
         this.articles = articles.map { ArticlePageModel.from(it) }.toMutableList()
 
-        view?.onSetSearchResult(this.articles)
+        _liveData.postValue(
+            PageState.Render(
+                ArticlePageState.Result(
+                    this.articles,
+                    isFirstPageResult = true
+                )
+            )
+        )
     }
 
     private val onSuccessNextPage: (List<Article>) -> Unit = { articles ->
@@ -50,7 +65,14 @@ class SearchArticlePresenter(
         this.articles = this.articles + articles.map { ArticlePageModel.from(it) }
         this.isLoadingNextPage = false
 
-        view?.onSetNextPageResult(this.articles)
+        _liveData.postValue(
+            PageState.Render(
+                ArticlePageState.Result(
+                    this.articles,
+                    isFirstPageResult = false
+                )
+            )
+        )
     }
 
     private val onError: (Throwable) -> Unit = { error ->
@@ -60,36 +82,33 @@ class SearchArticlePresenter(
                 onSuccessSearch(emptyList())
             }
         }
-        view?.onSetErrorResult(error.message ?: "")
+        _liveData.postValue(
+            PageState.Render(
+                ArticlePageState.Error(error.message ?: "")
+            )
+        )
     }
 
-    override fun attach(intent: Intent?) {
-        if (intent != null) {
-            sourceId = intent.getStringExtra(SearchArticleContract.EXTRA_SOURCE_ID) ?: ""
-            view?.onInitUI()
-            initAutoSearch()
-            loadSearchArticle("")
-        }
+    fun initData(sourceId: String) {
+        this.sourceId = sourceId
+        initAutoSearch()
+        loadSearchArticle("")
     }
 
-    override fun detach() {
+    override fun onCleared() {
         articlesUseCase.cancel()
-        view = null
+        super.onCleared()
     }
 
-    override fun loadSearch(searchTerm: String) = autoSearch.onNext(searchTerm)
+    fun loadSearch(searchTerm: String) = autoSearch.onNext(searchTerm)
 
-    override fun loadNextPage() {
+    fun loadNextPage() {
         if (!isLoadingNextPage && isNextPageAvailable) {
             isLoadingNextPage = true
 
-            view?.onLoadingNextPageResult()
+            _liveData.value = PageState.Render(ArticlePageState.LoadPaging)
             articlesUseCase(searchTerm, this.sourceId, nextPage, onSuccessNextPage, onError)
         }
-    }
-
-    override fun chooseArticle(article: ArticlePageModel) {
-        view?.onNavigateToArticleDetail(article.url)
     }
 
     private fun loadSearchArticle(searchTerm: String) {

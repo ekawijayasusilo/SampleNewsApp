@@ -15,9 +15,9 @@ interface ArticlesAPI {
     }
 
     @GET(PATH)
-    fun getArticles(
+    suspend fun getArticles(
         @Query(QUERY_PARAM_SEARCH_TERM) searchTerm: String,
         @Query(QUERY_PARAM_SOURCES) sourceId: String,
         @Query(QUERY_PARAM_PAGE) page: Int = 1
-    ): Single<Response<ArticlesResponse>>
+    ): Response<ArticlesResponse>
 }

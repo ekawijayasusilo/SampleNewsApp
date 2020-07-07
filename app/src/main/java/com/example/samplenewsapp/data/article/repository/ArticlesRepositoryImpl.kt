@@ -4,9 +4,9 @@ import com.example.samplenewsapp.data.article.service.ArticlesService
 import com.example.samplenewsapp.domain.article.repository.ArticlesRepository
 
 class ArticlesRepositoryImpl(private val service: ArticlesService) : ArticlesRepository {
-    override fun getArticles(
+    override suspend fun getArticles(
         searchTerm: String,
         sourceId: String,
         page: Int
-    ) = service.getArticles(searchTerm, sourceId, page).map { it.toArticles() }
+    ) = service.getArticles(searchTerm, sourceId, page)
 }

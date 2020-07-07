@@ -64,13 +64,13 @@ class ArticleAdapter(private var listener: ArticleAdapterListener?) :
                 .error(R.drawable.ic_baseline_broken_image_24)
                 .fallback(R.drawable.ic_baseline_image_24)
                 .into(binding.imageViewIllustration)
-            binding.root.setOnClickListener { listener?.onItemClicked(article) }
+            binding.root.setOnClickListener { listener?.onItemClicked(article.url) }
         }
     }
 
     interface ArticleAdapterListener {
         fun onLoadNextPage()
 
-        fun onItemClicked(article: ArticlePageModel)
+        fun onItemClicked(url: String)
     }
 }

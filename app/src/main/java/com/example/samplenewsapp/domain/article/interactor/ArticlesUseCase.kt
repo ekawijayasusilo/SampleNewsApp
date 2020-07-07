@@ -2,13 +2,13 @@ package com.example.samplenewsapp.domain.article.interactor
 
 import com.example.samplenewsapp.domain.article.model.Article
 import com.example.samplenewsapp.domain.article.repository.ArticlesRepository
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.schedulers.Schedulers
+import com.example.samplenewsapp.utils.Result
+import kotlinx.coroutines.*
 
-class ArticlesUseCase(private val repository: ArticlesRepository) {
+class ArticlesUseCase(private val repository: ArticlesRepository) : CoroutineScope {
 
-    private var compositeDisposable: CompositeDisposable = CompositeDisposable()
+    private val job: Job = SupervisorJob()
+    override val coroutineContext = Dispatchers.Main + job
 
     operator fun invoke(
         searchTerm: String,
@@ -17,14 +17,19 @@ class ArticlesUseCase(private val repository: ArticlesRepository) {
         onSuccess: (List<Article>) -> Unit,
         onError: (Throwable) -> Unit
     ) {
-        val disposable = repository.getArticles(searchTerm, sourceId, page)
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(onSuccess, onError)
-        compositeDisposable.add(disposable)
+        launch() {
+            val result = withContext(Dispatchers.IO) {
+                repository.getArticles(searchTerm, sourceId, page)
+            }
+
+            when (result) {
+                is Result.Success -> onSuccess(result.data)
+                is Result.Error -> onError(result.throwable)
+            }
+        }
     }
 
     fun cancel() {
-        compositeDisposable.clear()
+        job.cancelChildren()
     }
 }
